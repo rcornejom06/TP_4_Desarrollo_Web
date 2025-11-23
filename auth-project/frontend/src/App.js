@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import AdminPanel from './AdminPanel';
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = "https://tp-4-desarrollo-web.onrender.com/api";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -87,7 +87,7 @@ export default function App() {
   };
 
 const loginConGoogle = () => {
-  window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+  window.location.href = `${API_URL}/auth/google`;
 };
 
   const handleChange = (e) => {
