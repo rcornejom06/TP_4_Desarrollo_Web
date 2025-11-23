@@ -1,10 +1,10 @@
 // routes/auth.js
 const express = require('express');
 const router = express.Router();
-const Usuario = require('../backend/models/Usuario');
+const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const passport = require('../../config/passport');
+const passport = require('../config/passport');
 
 // POST /login - Autenticar usuario y generar token
 router.post('/login', async (req, res) => {
@@ -128,24 +128,7 @@ router.post('/register', async (req, res) => {
 });
 
 // GET /perfil - Obtener perfil del usuario autenticado
-router.get('/perfil', async (req, res) => {
-  try {
-    // req.usuario viene del middleware de autenticación
-    const usuario = await Usuario.findById(req.usuario.id)
-      .select('-password');
 
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.json(usuario);
-  } catch (error) {
-    res.status(500).json({ 
-      error: 'Error al obtener perfil',
-      detalle: error.message 
-    });
-  }
-});
 
 // OAuth con Google - Iniciar autenticación
 router.get('/google',
@@ -175,7 +158,8 @@ router.get('/google/callback',
 
     // Redireccionar al frontend con el token
     const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendURL}/auth/success?token=${token}`);
+    res.redirect(`${frontendURL}?token=${token}`);
+
   }
 );
 

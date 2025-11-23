@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error conectando a MongoDB:', err));
 
-// Rutas
+// Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ message: '🚀 API funcionando correctamente' });
 });
@@ -42,15 +42,31 @@ const verificarToken = require('./middleware/auth');
 // Importar rutas
 const authRoutes = require('./routes/auth');
 const usuariosRoutes = require('./routes/usuarios');
+const Usuario = require('./models/Usuario');
 
 // Rutas públicas (no requieren token)
 app.use('/api/auth', authRoutes);
 
+// Ruta de perfil PROTEGIDA
+app.get('/api/auth/perfil', verificarToken, async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.usuario.id).select('-password');
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Error al obtener perfil',
+      detalle: error.message 
+    });
+  }
+});
+
 // Rutas protegidas (requieren token)
 app.use('/api/usuarios', verificarToken, usuariosRoutes);
-
-// Ruta protegida de perfil
-app.use('/api/auth/perfil', verificarToken, authRoutes);
 
 // Puerto
 const PORT = process.env.PORT || 5000;

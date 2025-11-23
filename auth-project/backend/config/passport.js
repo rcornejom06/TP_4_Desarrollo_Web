@@ -1,6 +1,7 @@
+// config/passport.js
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const Usuario = require('../auth-project/backend/models/Usuario');
+const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 
 passport.use(new GoogleStrategy({
@@ -10,25 +11,20 @@ passport.use(new GoogleStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      // Buscar usuario por Google ID
       let usuario = await Usuario.findOne({ googleId: profile.id });
 
       if (usuario) {
-        // Usuario ya existe
         return done(null, usuario);
       }
 
-      // Verificar si existe usuario con ese email
       usuario = await Usuario.findOne({ email: profile.emails[0].value });
 
       if (usuario) {
-        // Vincular cuenta de Google a usuario existente
         usuario.googleId = profile.id;
         await usuario.save();
         return done(null, usuario);
       }
 
-      // Crear nuevo usuario
       const passwordAleatorio = Math.random().toString(36).slice(-8);
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(passwordAleatorio, salt);
