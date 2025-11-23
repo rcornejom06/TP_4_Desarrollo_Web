@@ -8,62 +8,110 @@ const passport = require('./config/passport');
 
 const app = express();
 
-// CORS — solo una vez
+// Middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: "GET,POST,PUT,PATCH,DELETE",
-  allowedHeaders: "Content-Type,Authorization"
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3000'
+  ],
+  credentials: true
 }));
-
 app.use(express.json());
 
-// Sesión para Passport
+// Configurar sesiones para Passport
 app.use(session({
-  secret: process.env.JWT_SECRET,
+  secret: process.env.JWT_SECRET || 'secret-key',
   resave: false,
   saveUninitialized: false
 }));
 
-// Passport
+// Inicializar Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// MongoDB
+// Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error conectando a MongoDB:', err));
 
-// Rutas
-const verificarToken = require('./middleware/auth');
-const authRoutes = require('./routes/auth');
-const usuariosRoutes = require('./routes/usuarios');
-const Usuario = require('./models/Usuario');
-
-// Ruta de verificación API
+// Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ message: '🚀 API funcionando correctamente' });
 });
 
-// Rutas públicas
+// Health check para Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date() });
+});
+
+// Importar middleware de autenticación
+const verificarToken = require('./middleware/auth');
+
+// Importar rutas
+const authRoutes = require('./routes/auth');
+const usuariosRoutes = require('./routes/usuarios');
+const Usuario = require('./models/Usuario');
+
+// Rutas públicas (no requieren token)
 app.use('/api/auth', authRoutes);
 
-// Ruta de perfil protegida
+// Ruta de perfil PROTEGIDA
 app.get('/api/auth/perfil', verificarToken, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario.id).select('-password');
-    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
     res.json(usuario);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener perfil', detalle: error.message });
+    res.status(500).json({ 
+      error: 'Error al obtener perfil',
+      detalle: error.message 
+    });
   }
 });
 
-// Rutas protegidas
+// Rutas protegidas (requieren token)
 app.use('/api/usuarios', verificarToken, usuariosRoutes);
 
-// Puerto
-const port = process.env.PORT || 5000;
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
+// Manejo de errores 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
+
+// Puerto y Host
+const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
+
+// Iniciar servidor
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
+  console.log(`📍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// Manejo de errores del servidor
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Puerto ${PORT} ya está en uso`);
+    process.exit(1);
+  } else {
+    console.error('❌ Error del servidor:', error);
+    process.exit(1);
+  }
+});
+
+// Manejo de cierre graceful
+process.on('SIGTERM', () => {
+  console.log('⚠️ SIGTERM recibido. Cerrando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado');
+    mongoose.connection.close(false, () => {
+      console.log('✅ Conexión MongoDB cerrada');
+      process.exit(0);
+    });
+  });
+});
+
+module.exports = app;
