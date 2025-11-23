@@ -5,8 +5,15 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const session = require('express-session');
 const passport = require('./config/passport');
+const cors = require("cors");
 
 const app = express();
+
+app.use(cors({
+  origin: "*",
+  methods: "GET,POST,PUT,PATCH,DELETE",
+  allowedHeaders: "Content-Type,Authorization"
+}));
 
 // Middlewares
 app.use(cors({
@@ -69,7 +76,7 @@ app.get('/api/auth/perfil', verificarToken, async (req, res) => {
 app.use('/api/usuarios', verificarToken, usuariosRoutes);
 
 // Puerto
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+const port = process.env.PORT || 5000;
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
 });
