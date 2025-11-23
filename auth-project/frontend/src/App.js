@@ -86,9 +86,9 @@ export default function App() {
     }
   };
 
-  const loginConGoogle = () => {
-    window.location.href = `${API_URL}/auth/google`;
-  };
+const loginConGoogle = () => {
+  window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+};
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
