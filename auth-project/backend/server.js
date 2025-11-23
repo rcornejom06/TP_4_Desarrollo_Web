@@ -30,18 +30,27 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Conexión a MongoDB
+console.log('🔄 Conectando a MongoDB...');
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB'))
-  .catch((err) => console.error('❌ Error conectando a MongoDB:', err));
+  .catch((err) => console.error('❌ Error conectando a MongoDB:', err.message));
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-  res.json({ message: '🚀 API funcionando correctamente' });
+  res.json({ 
+    message: '🚀 API funcionando correctamente',
+    timestamp: new Date(),
+    port: process.env.PORT || 5000
+  });
 });
 
 // Health check para Render
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date() });
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date(),
+    mongodb: mongoose.connection.readyState === 1 ? 'Conectado' : 'Desconectado'
+  });
 });
 
 // Importar middleware de autenticación
@@ -85,40 +94,29 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
-console.log(`🔍 Intentando iniciar servidor en ${HOST}:${PORT}`);
-console.log(`📦 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-console.log(`🔌 Puerto desde variable: ${process.env.PORT}`);
+console.log('🔍 Configuración del servidor:');
+console.log('   PORT:', PORT);
+console.log('   HOST:', HOST);
+console.log('   NODE_ENV:', process.env.NODE_ENV || 'development');
 
 // Iniciar servidor
-const server = app.listen(PORT, HOST, (err) => {
-  if (err) {
-    console.error('❌ Error al iniciar servidor:', err);
-    process.exit(1);
-  }
-  console.log(`✅ Servidor escuchando exitosamente`);
-  console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
-  console.log(`📍 URL: http://${HOST}:${PORT}`);
+const server = app.listen(PORT, HOST, function() {
+  console.log(`✅ Servidor iniciado exitosamente en ${HOST}:${PORT}`);
 });
 
-// Timeout de seguridad
-setTimeout(() => {
-  console.log(`⏰ Servidor corriendo por 30 segundos - Puerto activo: ${PORT}`);
-}, 30000);
-
+// Evento de listening
 server.on('listening', () => {
   const addr = server.address();
-  console.log(`🎉 Servidor listening event - Puerto: ${addr.port}`);
+  console.log(`🎉 SERVIDOR ACTIVO - Puerto: ${addr.port}, Host: ${addr.address}`);
 });
 
 // Manejo de errores del servidor
 server.on('error', (error) => {
+  console.error('❌ Error del servidor:', error);
   if (error.code === 'EADDRINUSE') {
     console.error(`❌ Puerto ${PORT} ya está en uso`);
-    process.exit(1);
-  } else {
-    console.error('❌ Error del servidor:', error);
-    process.exit(1);
   }
+  process.exit(1);
 });
 
 // Manejo de cierre graceful
