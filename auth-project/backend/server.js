@@ -85,10 +85,29 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
+console.log(`🔍 Intentando iniciar servidor en ${HOST}:${PORT}`);
+console.log(`📦 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔌 Puerto desde variable: ${process.env.PORT}`);
+
 // Iniciar servidor
-const server = app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, (err) => {
+  if (err) {
+    console.error('❌ Error al iniciar servidor:', err);
+    process.exit(1);
+  }
+  console.log(`✅ Servidor escuchando exitosamente`);
   console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
-  console.log(`📍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📍 URL: http://${HOST}:${PORT}`);
+});
+
+// Timeout de seguridad
+setTimeout(() => {
+  console.log(`⏰ Servidor corriendo por 30 segundos - Puerto activo: ${PORT}`);
+}, 30000);
+
+server.on('listening', () => {
+  const addr = server.address();
+  console.log(`🎉 Servidor listening event - Puerto: ${addr.port}`);
 });
 
 // Manejo de errores del servidor
